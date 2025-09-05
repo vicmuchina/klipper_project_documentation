@@ -1,0 +1,70 @@
+Of course. You've made excellent progress today, moving from a non-working configuration with multiple errors to a stable state that's ready for the final calibration steps. It's very wise to stop here and come back with a fresh perspective.
+
+Here is a clear guide on how to safely shut everything down for the night, and what your simplified, daily workflow will look like once this setup is complete.
+
+How to Wrap Up For Today (Safe Shutdown)
+
+This procedure ensures the printer is safe and that you can easily resume your work tomorrow.
+
+Turn Off Heaters (in Mainsail): Although the last error likely shut them down, it's good practice to be certain. In the Console input box in Mainsail, type TURN_OFF_HEATERS and press Enter.
+
+Stop the Klipper Software (in WSL):
+
+Open your Ubuntu/WSL terminal.
+
+Navigate to your Klipper directory (e.g., cd ~/prind).
+
+Run the command docker compose down. This will gracefully stop and shut down the Klipper, Moonraker, and Mainsail services.
+
+Disconnect the USB from WSL (in PowerShell):
+
+Open PowerShell as an Administrator.
+
+Run usbipd detach --busid 3-5 to safely release the printer's USB connection from WSL.
+
+Power Down: You can now safely turn off your 3D printer and shut down your computer.
+
+How to Continue Tomorrow
+
+When you are ready to start again, follow this startup sequence:
+
+Turn on your PC and your 3D printer.
+
+Open PowerShell as an Administrator and re-attach the printer to WSL using the commands:
+
+usbipd list (to confirm the BUSID is still 3-5)
+
+usbipd attach --wsl --busid 3-5
+
+Open your Ubuntu/WSL terminal, navigate to your Klipper directory (cd ~/prind), and start the services:
+
+docker compose up -d   or if it refuses and brings this error , use (Error response from daemon: error gathering device information while adding custom device "/dev/video0": no such file or directory)
+
+docker compose up -d klipper moonraker mainsail traefik
+
+Open your web browser to http://localhost. The Mainsail interface should load and, after about 30-60 seconds, connect to the printer and show you the correct temperatures.
+
+You will be right back where you are now, ready to begin the calibration steps.
+
+Your Daily Workflow (Once All Calibration is Finished)
+
+You asked a great question about what this looks like long-term. The complex part you are doing now is a one-time setup. Once your printer is calibrated, your daily routine to start printing will be much, much simpler.
+
+Your future "I want to print something" process will be:
+
+Power On: Turn on your printer and your computer.
+
+Connect USB to WSL: This is the only recurring "setup" step. Open PowerShell as Admin and run usbipd attach --wsl --busid 3-5.
+
+Start Klipper: Open your WSL terminal and run docker compose up -d.
+
+Print: Open http://localhost, preheat the printer from the Mainsail dashboard, upload your G-code file, and click Print.
+
+That's it. The difficult work of configuring pins, sensors, and settings is what we are finalizing now. Once you run the calibration commands (PID tuning, sensorless homing tuning, Z-offset), those values get saved with SAVE_CONFIG and you won't have to touch them again unless you change a physical part on the printer.
+
+You're in the home stretch. Get some rest, and we'll get this machine calibrated and printing tomorrow.
+
+
+
+
+ docker compose up -d klipper moonraker mainsail traefik

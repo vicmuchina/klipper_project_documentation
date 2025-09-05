@@ -1,0 +1,245 @@
+Of course! It's an excellent idea to document the entire process. We navigated several common but tricky issues, and having a complete guide will make it much easier to repeat in the future.
+
+Here is the full, step-by-step guide from a clean start to a calibrated printer, incorporating all the solutions we discovered along the way.
+
+Complete Guide: Setting Up Klipper on a DIY Printer with WSL and an SKR Mini E3 V3
+
+This guide will walk you through the entire process, including software installation, firmware compilation, hardware connection, and final calibration.
+
+Phase 1: Environment Setup on Windows
+
+Install WSL2:
+
+Open PowerShell as Administrator.
+
+Run the command: wsl --install
+
+This will install the default Ubuntu distribution. It's recommended to create a user and password that you will remember.
+
+Install Docker Desktop:
+
+Download and install Docker Desktop for Windows from the official Docker website.
+
+During installation, or in the settings afterward (Settings > General), ensure the option "Use the WSL 2 based engine" is checked.
+
+In Docker Desktop settings, go to Resources > WSL Integration and make sure the toggle for your WSL distribution (e.g., Ubuntu) is turned on.
+
+Clone the prind Repository:
+
+Open your WSL terminal (e.g., open the Start Menu and type Ubuntu).
+
+Navigate to where you want to store your projects. For example, your home directory:
+
+code
+Bash
+download
+content_copy
+expand_less
+
+cd ~
+
+Clone the prind repository, which contains all the necessary Docker configurations for Klipper:
+
+code
+Bash
+download
+content_copy
+expand_less
+IGNORE_WHEN_COPYING_START
+IGNORE_WHEN_COPYING_END
+git clone https://github.com/mkuf/prind
+
+Navigate into the new directory:
+
+code
+Bash
+download
+content_copy
+expand_less
+IGNORE_WHEN_COPYING_START
+IGNORE_WHEN_COPYING_END
+cd prind
+Phase 2: Building and Flashing Klipper Firmware
+
+Configure the Firmware for SKR Mini E3 V3:
+
+In the prind directory, run the menuconfig tool. This command correctly includes the extra configuration file needed for the builder.
+
+code
+Bash
+download
+content_copy
+expand_less
+IGNORE_WHEN_COPYING_START
+IGNORE_WHEN_COPYING_END
+docker compose -f docker-compose.yaml -f docker-compose.extra.make.yaml run --rm klipper-mcu-builder make menuconfig
+
+In the blue configuration menu, set the following options precisely:
+
+Enable extra low-level configuration options
+
+Micro-controller Architecture: STMicroelectronics STM32
+
+Processor model: STM32G0B1
+
+Bootloader offset: 8KiB bootloader
+
+Clock Reference: 8 MHz crystal
+
+Communication interface: USB (on PA11/PA12)
+
+Press Q to Quit, then Y to save.
+
+Build the Firmware:
+
+Compile the firmware with the configuration you just saved:
+
+code
+Bash
+download
+content_copy
+expand_less
+IGNORE_WHEN_COPYING_START
+IGNORE_WHEN_COPYING_END
+docker compose -f docker-compose.yaml -f docker-compose.extra.make.yaml run --rm klipper-mcu-builder make
+
+This creates the firmware file at prind/firmware_images/klipper.bin.
+
+Flash the Firmware to the Board:
+
+Rename the file: The SKR board requires the file to be named firmware.bin. Rename it from within WSL:
+
+code
+Bash
+download
+content_copy
+expand_less
+IGNORE_WHEN_COPYING_START
+IGNORE_WHEN_COPYING_END
+mv firmware_images/klipper.bin firmware_images/firmware.bin
+
+Copy to SD Card:
+
+Use a microSD card that is 32GB or smaller and formatted as FAT32. This is the most common point of failure.
+
+Access your WSL files from Windows File Explorer by typing \\wsl$ in the address bar.
+
+Navigate to Ubuntu/home/<your-username>/prind/firmware_images/.
+
+Copy the firmware.bin file to the root of your microSD card.
+
+Flash:
+
+Turn the printer's power OFF.
+
+Insert the microSD card.
+
+Turn the printer's power ON.
+
+Wait about 30 seconds. The board will flash the firmware.
+
+Confirm: Turn the printer off, put the SD card in your computer, and verify that the file has been renamed to firmware.CUR. If not, re-format the card or try a different one.
+
+Phase 3: Creating and Connecting printer.cfg
+
+Create Your printer.cfg:
+
+Open the config folder inside your prind directory. You will create a file here named printer.cfg.
+
+Copy and paste the full configuration from the end of this guide into that file.
+
+Connect the Printer's USB to WSL:
+
+Connect your printer to your PC via USB and turn it on.
+
+Open PowerShell as Administrator.
+
+Run usbipd wsl list to find your printer. Note its BUSID (e.g., 3-5).
+
+Run usbipd wsl attach --busid <YOUR-BUSID-HERE> to connect it to WSL.
+
+Update printer.cfg with the Serial ID:
+
+Go back to your WSL terminal.
+
+Run ls /dev/serial/by-id/* to get the unique device ID.
+
+Copy the entire output (e.g., /dev/serial/by-id/usb-Klipper_stm32g0b1xx...).
+
+Open your printer.cfg file and paste this ID into the serial: line under the [mcu] section.
+
+Phase 4: Launching Klipper and the Web UI
+
+Start the Klipper Stack without the Webcam:
+
+In your WSL terminal (inside the prind directory), run this command to start Klipper, Moonraker, and Mainsail:
+
+code
+Bash
+download
+content_copy
+expand_less
+IGNORE_WHEN_COPYING_START
+IGNORE_WHEN_COPYING_END
+docker compose up -d klipper moonraker mainsail traefik
+```    *   This avoids the webcam error we encountered earlier.
+
+Access the Mainsail UI:
+
+Open a web browser on Windows and navigate to http://localhost.
+
+You should now see the Mainsail dashboard. Check the console for any errors. If you see the "Source contains parsing errors" message, ensure you have not copied any instructional text into your printer.cfg.
+
+Phase 5: Final Calibration (in Mainsail UI)
+
+This is the final and most critical phase. All commands are typed into the Console in the Mainsail UI.
+
+Tune Sensorless Homing Sensitivity:
+
+X-Axis:
+
+Manually move the print head to the center of the X-axis.
+
+Run: TUNING_TOWER COMMAND=SET_TMC_FIELD FIELD=SGTHRS PARAMETER=X START=60 STEP_DELTA=1 STEP_HEIGHT=5
+
+Run: G28 X
+
+Watch the console output. Note the SGTHRS value on the first successful, quiet home. Stop the test with M112.
+
+Update driver_SGTHRS: in the [tmc2209 stepper_x] section of your printer.cfg.
+
+Y-Axis:
+
+Manually move the print head to the center of the Y-axis.
+
+Run: TUNING_TOWER COMMAND=SET_TMC_FIELD FIELD=SGTHRS PARAMETER=Y START=60 STEP_DELTA=1 STEP_HEIGHT=5
+
+Run: G28 Y
+
+Find the best value, stop the test with M112, and update driver_SGTHRS: in the [tmc2209 stepper_y] section.
+
+Perform Core Calibrations:
+
+PID Tuning: Tune your heaters for stable temperatures.
+
+PID_CALIBRATE HEATER=extruder TARGET=210
+
+PID_CALIBRATE HEATER=heater_bed TARGET=60
+
+Probe Z-Offset: This calibrates your BLTouch.
+
+Home all axes: G28
+
+Start the calibration: PROBE_CALIBRATE
+
+Follow the on-screen instructions, using the TESTZ command and a piece of paper to find the correct nozzle height.
+
+Finish by running: ACCEPT
+
+Save and Restart:
+
+This is the most important command. It saves all your tuning values permanently to your printer.cfg.
+
+Run: SAVE_CONFIG
+
+The printer will restart. You are now calibrated and ready for your first print
