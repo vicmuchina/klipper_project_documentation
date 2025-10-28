@@ -1,0 +1,19 @@
+{
+    "compatible_printers": [
+        "MyKlipper 0.6 nozzle"
+    ],
+    "filament_settings_id": [
+        "Generic ABS @System - Copy"
+    ],
+    "from": "User",
+    "hot_plate_temp": [
+        "95"
+    ],
+    "hot_plate_temp_initial_layer": [
+        "95"
+    ],
+    "inherits": "Generic ABS @System",
+    "is_custom_defined": "0",
+    "name": "Generic ABS @System - Copy",
+    "version": "2.3.0.3"
+}
