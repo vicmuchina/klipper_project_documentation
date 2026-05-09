@@ -13,7 +13,6 @@ services:
       init:
         condition: service_completed_successfully
     command: >
-      -I printer_data/run/klipper.tty
       -a printer_data/run/klipper.sock
       printer_data/config/printer.cfg
       -l printer_data/logs/klippy.log
